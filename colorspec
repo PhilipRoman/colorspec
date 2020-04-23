@@ -1,0 +1,160 @@
+#!/usr/bin/env lua5.3
+
+local windows = package.config:sub(1, 1) == "\\"
+
+package.path = table.concat({
+	"./?";
+	"./?.lua";
+
+	windows
+		and (os.getenv("USERPROFILE").."\\.colorspec\\?")
+		or (os.getenv("HOME").."/.colorspec/?");
+	windows
+		and (os.getenv("USERPROFILE").."\\.colorspec\\?.lua")
+		or (os.getenv("HOME").."/.colorspec/?.lua");
+
+	windows
+		and "C:\\colorspec\\?"
+		or "/usr/share/colorspec/?";
+	windows
+		and "C:\\colorspec\\?.lua"
+		or "/usr/share/colorspec/?.lua";
+
+	not windows
+		and "/usr/local/share/colorspec/?";
+	not windows
+		and "/usr/local/share/colorspec/?.lua";
+
+}, ';')
+
+-- command line args
+local arg = arg or {...}
+-- a list of format tables
+local formats = {}
+-- a list of open file objects
+local infiles = {}
+-- maps keys to names according to formats
+local keys = {}
+
+setmetatable(keys, {
+	__index = function(self, k, v)
+		for _, format in pairs(formats) do
+			if format[k] then
+				return format[k]
+			end
+		end
+	end
+})
+
+
+local function xopen()
+	local f, err = io.open(a, "r")
+	if not f then
+		io.stderr:write(err, '\n')
+		os.exit(1)
+	end
+	return f
+end
+
+local onlyfiles = false
+for _, a in ipairs(arg) do
+	if a == '--' then
+		onlyfiles = true
+	elseif onlyfiles then
+		table.insert(infiles, xopen(a))
+	elseif a:match '^-%F.' then
+		local formatfile = a:match '^%-F(.+)$'
+		table.insert(formats, require(formatfile))
+	elseif a:match '^%-I.' then
+		local dir = a:match '^%-I(.+)$'
+		package.path = package.path..";"..dir..'/?'
+		package.path = package.path..";"..dir..'/?.lua'
+	elseif a == '-' then
+		table.insert(infiles, io.stdin)
+	else
+		table.insert(infiles, xopen(a))
+	end
+end
+
+if #infiles == 0 then
+	infiles = {io.stdin}
+end
+
+local function getline()
+	for _, f in ipairs(infiles) do
+		for line in f:lines() do
+			coroutine.yield(line)
+		end
+		f:close()
+	end
+end
+
+local colors = {
+	black = 0,
+	red = 1,
+	green = 2,
+	yellow = 3,
+	blue = 4,
+	magenta = 5,
+	purple = 5,
+	cyan = 6,
+	white = 7,
+	default = 9,
+}
+
+local modifiers = {
+	bold = 1,
+	underlined = 21,
+	underline = 21,
+}
+
+local FOREGROUND = 30
+local BRIGHT = 90
+local BACKGROUND = 40
+
+local function doline(spec)
+	local result = {}
+	local k = FOREGROUND
+	for token in spec:gmatch '(%S+)' do
+		if token == 'on' then
+			k = BACKGROUND
+		elseif token == 'bright' then
+			k = BRIGHT
+		elseif modifiers[token] then
+			table.insert(result, modifiers[token])
+		elseif colors[token] then
+			table.insert(result, colors[token] + k)
+		elseif token:match '[0-9]+' then
+			table.insert(result, token)
+		else
+			io.stderr:write('Warning: unknown color/modifier: ', token, '\n')
+		end
+	end
+	return table.concat(result, ';')
+end
+
+local result = {}
+
+local linenum = 0
+for line in coroutine.wrap(getline) do
+	linenum = linenum + 1
+	line = line:match '^[^#]*'
+	if not line:match '%S' then
+		goto continue
+	end
+	local key, rest = line:match('^(.-):(.+)$')
+	if not key and rest then
+		io.stderr:write("Warning: bad format on line ", tostring(linenum), '\n')
+		goto continue
+	end
+	key = string.lower(key)
+	if not keys[key] then
+		io.stderr:write("Warning: unknown key on line ", tostring(linenum), ': ', key, '\n')
+		goto continue
+	end
+	key = keys[key] or key
+	table.insert(result, key .. "=" .. doline(rest))
+	::continue::
+end
+
+print(table.concat(result, ':'))

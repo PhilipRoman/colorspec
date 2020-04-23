@@ -1,0 +1,59 @@
+= colorspec(1)
+Philip Roman
+:doctype: manpage
+
+== Name
+
+colorspec - utility for configuring colors of various programs
+
+== Synopsis
+
+`colorspec [-Fformat...] [-Idirectory...] [file...]`
+
+== Description
+
+Colorspec reads configuration from standard input or provided files and
+formats it according to given key files.
+
+For example, you could configure the `ls` command by adding the following
+line to your shell initialization:
+```
+export LS_COLORS="$(colorspec -Fls ~/.myconfig)"
+```
+
+Colorspec allows to maintain color configurations, such as $LS_COLORS, in
+a more readable way. Here are some examples of the syntax:
+
+```
+directory: bright yellow
+executable: bold underlined red on green
+pipes: bright green on default underline
+*.txt: underline
+```
+
+Colorspec syntax is very forgiving, for example, you can freely
+mix plural and singular keys, use aliases for colors and keys, put bold and
+underlined modifiers wherever you want, etc.
+
+The keys are defined by a format file. These files are actually
+Lua scripts which return tables mapping a colorspec key to the key of
+the target program (but you don't need to know Lua to create/edit them).
+See provided format files for more information.
+
+== Files
+
+The key files specified by `-F` will be resolved according to directories
+included with `-I`. The file can also optionally have a `.lua` extension.
+
+On Linux by default colorspec will look in directories `~/.colorspec`,
+`/usr/local/share/colorspec` and `/usr/share/colorspec` in that order
+to find format files.
+
+On Windows by default colorspec will look in directories
+`%USERPROFILE%\.colorspec` and `C:\colorspec` in that order.
+
+== Bugs
+
+Colorspec currently doesn't allow using 256 colors. This should be implemented
+where possible. Once this is implemented, HTML color aliases or hex notation
+for them would be desirable.
