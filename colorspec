@@ -165,8 +165,6 @@ end
 
 local result = {}
 
-local defaultspec = {}
-
 for line in coroutine.wrap(getline) do
 	line = line:match '^[^#]*'
 	if not line:match '%S' then
@@ -178,14 +176,6 @@ for line in coroutine.wrap(getline) do
 		goto continue
 	end
 	key = string.lower(key)
-	if key == 'default' then
-		local spec = doline(rest)
-		for _, format in ipairs(formats) do
-			for k, _ in pairs(format) do
-				table.insert(defaultspec, k .. "=" .. spec)
-			end
-		end
-	end
 	if not keys[key] then
 		info("unknown key: ", key)
 		goto continue
@@ -194,7 +184,4 @@ for line in coroutine.wrap(getline) do
 	::continue::
 end
 
-for _, v in ipairs(defaultspec) do
-	table.insert(result, v)
-end
 print(table.concat(result, ':'))
