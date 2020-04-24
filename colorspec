@@ -104,8 +104,20 @@ local colors = {
 
 local modifiers = {
 	bold = 1,
-	underlined = 21,
-	underline = 21,
+
+	underlined = 4,
+	underline = 4,
+
+	italic = 3,
+
+	crossed = 9,
+	strikethrough = 9,
+
+	inverse = 7,
+	invert = 7,
+	inverted = 7,
+	reverse = 7,
+	reversed = 7,
 }
 
 local FOREGROUND = 30
