@@ -31,14 +31,16 @@ package.path = table.concat({
 local arg = arg or {...}
 -- a list of format tables
 local formats = {}
--- a list of open file objects
+-- a list of open input file objects
 local infiles = {}
+-- list of input file names, matchin the files in "infiles"
+local infilenames = {}
 -- maps keys to names according to formats
 local keys = {}
 
 setmetatable(keys, {
 	__index = function(self, k, v)
-		for _, format in pairs(formats) do
+		for _, format in ipairs(formats) do
 			if format[k] then
 				return format[k]
 			end
@@ -61,6 +63,7 @@ for _, a in ipairs(arg) do
 	if a == '--' then
 		onlyfiles = true
 	elseif onlyfiles then
+		table.insert(infilenames, a)
 		table.insert(infiles, xopen(a))
 	elseif a:match '^-%F.' then
 		local formatfile = a:match '^%-F(.+)$'
@@ -70,23 +73,17 @@ for _, a in ipairs(arg) do
 		package.path = package.path..";"..dir..'/?'
 		package.path = package.path..";"..dir..'/?.lua'
 	elseif a == '-' then
+		table.insert(infilenames, "<stdin>")
 		table.insert(infiles, io.stdin)
 	else
+		table.insert(infilenames, a)
 		table.insert(infiles, xopen(a))
 	end
 end
 
 if #infiles == 0 then
+	infilenames = {"<stdin>"}
 	infiles = {io.stdin}
-end
-
-local function getline()
-	for _, f in ipairs(infiles) do
-		for line in f:lines() do
-			coroutine.yield(line)
-		end
-		f:close()
-	end
 end
 
 local colors = {
@@ -124,6 +121,21 @@ local FOREGROUND = 30
 local BRIGHT = 90
 local BACKGROUND = 40
 
+local linenum = 0
+local currentfile = "?"
+
+local function getline()
+	for i, f in ipairs(infiles) do
+		linenum = 1
+		currentfile = infilenames[i]
+		for line in f:lines() do
+			coroutine.yield(line)
+			linenum = linenum + 1
+		end
+		f:close()
+	end
+end
+
 local function doline(spec)
 	local result = {}
 	local k = FOREGROUND
@@ -131,6 +143,9 @@ local function doline(spec)
 		if token == 'on' then
 			k = BACKGROUND
 		elseif token == 'bright' then
+			if k == BACKGROUND then
+				io.stderr:write(filename, ':', linenum, '\tWarning: background color cannot be bright')
+			end
 			k = BRIGHT
 		elseif modifiers[token] then
 			table.insert(result, modifiers[token])
@@ -139,7 +154,7 @@ local function doline(spec)
 		elseif token:match '[0-9]+' then
 			table.insert(result, token)
 		else
-			io.stderr:write('Warning: unknown color/modifier: ', token, '\n')
+			io.stderr:write(filename, ':', linenum, '\tWarning: unknown color/modifier: ', token, '\n')
 		end
 	end
 	return table.concat(result, ';')
@@ -147,26 +162,36 @@ end
 
 local result = {}
 
-local linenum = 0
+local defaultspec = {}
+
 for line in coroutine.wrap(getline) do
-	linenum = linenum + 1
 	line = line:match '^[^#]*'
 	if not line:match '%S' then
 		goto continue
 	end
 	local key, rest = line:match('^(.-):(.+)$')
 	if not key and rest then
-		io.stderr:write("Warning: bad format on line ", tostring(linenum), '\n')
+		io.stderr:write(filename, ':', linenum, "\tWarning: bad syntax\n")
 		goto continue
 	end
 	key = string.lower(key)
+	if key == 'default' then
+		local spec = doline(rest)
+		for _, format in ipairs(formats) do
+			for k, _ in pairs(format) do
+				table.insert(defaultspec, k .. "=" .. spec)
+			end
+		end
+	end
 	if not keys[key] then
-		io.stderr:write("Warning: unknown key on line ", tostring(linenum), ': ', key, '\n')
+		io.stderr:write(filename, ':', linenum, "\tWarning: unknown key: ", key, '\n')
 		goto continue
 	end
-	key = keys[key] or key
-	table.insert(result, key .. "=" .. doline(rest))
+	table.insert(result, keys[key] .. "=" .. doline(rest))
 	::continue::
 end
 
+for _, v in ipairs(defaultspec) do
+	table.insert(result, v)
+end
 print(table.concat(result, ':'))
