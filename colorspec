@@ -47,8 +47,8 @@ setmetatable(keys, {
 })
 
 
-local function xopen()
-	local f, err = io.open(a, "r")
+local function xopen(name)
+	local f, err = io.open(name, "r")
 	if not f then
 		io.stderr:write(err, '\n')
 		os.exit(1)
