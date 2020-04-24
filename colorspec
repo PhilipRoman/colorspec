@@ -48,7 +48,6 @@ setmetatable(keys, {
 	end
 })
 
-
 local function xopen(name)
 	local f, err = io.open(name, "r")
 	if not f then
@@ -122,18 +121,22 @@ local BRIGHT = 90
 local BACKGROUND = 40
 
 local linenum = 0
-local currentfile = "?"
+local filename = "?"
 
 local function getline()
 	for i, f in ipairs(infiles) do
 		linenum = 1
-		currentfile = infilenames[i]
+		filename = infilenames[i]
 		for line in f:lines() do
 			coroutine.yield(line)
 			linenum = linenum + 1
 		end
 		f:close()
 	end
+end
+
+local function info(...)
+	io.stderr:write(filename, ':', linenum, '\t', table.concat {...}, '\n')
 end
 
 local function doline(spec)
@@ -144,7 +147,7 @@ local function doline(spec)
 			k = BACKGROUND
 		elseif token == 'bright' then
 			if k == BACKGROUND then
-				io.stderr:write(filename, ':', linenum, '\tWarning: background color cannot be bright')
+				info 'background color cannot be bright'
 			end
 			k = BRIGHT
 		elseif modifiers[token] then
@@ -154,7 +157,7 @@ local function doline(spec)
 		elseif token:match '[0-9]+' then
 			table.insert(result, token)
 		else
-			io.stderr:write(filename, ':', linenum, '\tWarning: unknown color/modifier: ', token, '\n')
+			info('unknown color/modifier: ', token)
 		end
 	end
 	return table.concat(result, ';')
@@ -171,7 +174,7 @@ for line in coroutine.wrap(getline) do
 	end
 	local key, rest = line:match('^(.-):(.+)$')
 	if not key and rest then
-		io.stderr:write(filename, ':', linenum, "\tWarning: bad syntax\n")
+		info "bad syntax"
 		goto continue
 	end
 	key = string.lower(key)
@@ -184,7 +187,7 @@ for line in coroutine.wrap(getline) do
 		end
 	end
 	if not keys[key] then
-		io.stderr:write(filename, ':', linenum, "\tWarning: unknown key: ", key, '\n')
+		info("unknown key: ", key)
 		goto continue
 	end
 	table.insert(result, keys[key] .. "=" .. doline(rest))
