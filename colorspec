@@ -66,7 +66,8 @@ for _, a in ipairs(arg) do
 		table.insert(infiles, xopen(a))
 	elseif a:match '^-%F.' then
 		local formatfile = a:match '^%-F(.+)$'
-		table.insert(formats, require(formatfile))
+		local formattable = require(formatfile)
+		table.insert(formats, formattable)
 	elseif a:match '^%-I.' then
 		local dir = a:match '^%-I(.+)$'
 		package.path = package.path..";"..dir..'/?'
@@ -175,12 +176,12 @@ for line in coroutine.wrap(getline) do
 		info "bad syntax"
 		goto continue
 	end
-	key = string.lower(key)
-	if not keys[key] then
+	local resolved = keys[key] or keys[string.lower(key)]
+	if not resolved then
 		info("unknown key: ", key)
 		goto continue
 	end
-	table.insert(result, keys[key] .. "=" .. doline(rest))
+	table.insert(result, resolved .. "=" .. doline(rest))
 	::continue::
 end
 
