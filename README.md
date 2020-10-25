@@ -7,10 +7,11 @@ information.
 ## Syntax
 
 ```
+# This is a comment
 directory: bright yellow
 executable: bold underlined red on green
 pipes: bright green on default
-*.txt: underline
+*.txt: #FFFFCC underline
 ```
 
 ## Dependencies
