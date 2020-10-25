@@ -115,9 +115,10 @@ local modifiers = {
 	reversed = 7,
 }
 
-local FOREGROUND = 30
+local FOREGROUND = 0
+local BACKGROUND = 10
+local DIM = 30
 local BRIGHT = 90
-local BACKGROUND = 40
 
 local linenum = 0
 local filename = "?"
@@ -140,21 +141,24 @@ end
 
 local function doline(spec)
 	local result = {}
-	local k = FOREGROUND
+	local k1 = DIM
+	local k2 = FOREGROUND
 	for token in spec:gmatch '(%S+)' do
 		if token == 'on' then
-			k = BACKGROUND
+			k2 = BACKGROUND
+			k1 = DIM
 		elseif token == 'bright' then
-			if k == BACKGROUND then
-				info 'background color cannot be bright'
-			end
-			k = BRIGHT
+			k1 = BRIGHT
 		elseif modifiers[token] then
 			table.insert(result, modifiers[token])
-		elseif colors[token] then
-			table.insert(result, colors[token] + k)
-		elseif token:match '[0-9]+' then
-			table.insert(result, token)
+		elseif colors[token] then -- 4 bit colors
+			table.insert(result, colors[token] + k1 + k2)
+		elseif token:match '^%d+$' then -- 8 bit colors
+			table.insert(result, (k2==BACKGROUND and '48' or '38')..';5;'..token)
+		elseif token:match '^#%x%x%x%x%x%x$' then -- 24 bit color
+			table.insert(result, (k2==BACKGROUND and '48' or '38')..';2;'..token:gsub('#(..)(..)(..)', function(r, g, b)
+				return tonumber(r, 16)..';'..tonumber(g, 16)..';'..tonumber(b, 16)
+			end))
 		else
 			info('unknown color/modifier: ', token)
 		end
@@ -165,8 +169,7 @@ end
 local result = {}
 
 for line in coroutine.wrap(getline) do
-	line = line:match '^[^#]*'
-	if not line:match '%S' then
+	if line:match '^%s*$' or line:match '^%s*#' then
 		goto continue
 	end
 	local key, rest = line:match('^(.-):(.+)$')

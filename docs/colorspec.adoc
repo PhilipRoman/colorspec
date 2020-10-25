@@ -25,10 +25,11 @@ Colorspec allows to maintain color configurations, such as $LS_COLORS, in
 a more readable way. Here are some examples of the syntax:
 
 ```
+# This is a comment
 directory: bright yellow
 executable: bold underlined red on green
-pipes: bright green on default underline
-*.txt: underline
+pipes: bright green on default
+*.txt: #FFFFCC underline
 ```
 
 Colorspec syntax is very forgiving, for example, you can freely
@@ -54,6 +55,5 @@ On Windows by default colorspec will look in directories
 
 == Bugs
 
-Colorspec currently doesn't allow using 256 colors. This should be implemented
-where possible. Once this is implemented, HTML color aliases or hex notation
-for them would be desirable.
+If your terminal doesn't support 8-bit or 24-bit colors, colorspec doesn't
+try to find the closest match.
