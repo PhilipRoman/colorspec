@@ -1,4 +1,4 @@
-# ColorSpec
+# Colorspec
 
 Colorspec is a small utility script to keep your color configurations
 in a more readable format. See [manual](docs/colorspec.adoc) for more
@@ -15,6 +15,6 @@ pipes: bright green on default
 
 ## Dependencies
 
-Colorspec requires Lua 5.2+ or LuaJit.
+Colorspec requires at least Lua 5.1 or LuaJit.
 To build documentation, you will need Asciidoctor
 (but you can simply read the source: [colorspec.adoc](docs/colorspec.adoc))

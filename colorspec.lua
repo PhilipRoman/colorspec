@@ -1,5 +1,3 @@
-#!/usr/bin/env lua5.3
-
 local windows = package.config:sub(1, 1) == "\\"
 
 package.path = table.concat({

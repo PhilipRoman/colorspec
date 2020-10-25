@@ -8,7 +8,7 @@ colorspec - utility for configuring colors of various programs
 
 == Synopsis
 
-`colorspec [-Fformat...] [-Idirectory...] [file...]`
+`**colorspec** [**-F**__format__]... [**-I**__directory__]... [__file__]...`
 
 == Description
 
