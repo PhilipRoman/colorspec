@@ -37,7 +37,7 @@ local infilenames = {}
 local keys = {}
 
 setmetatable(keys, {
-	__index = function(self, k, v)
+	__index = function(_, k)
 		for _, format in ipairs(formats) do
 			if format[k] then
 				return format[k]
