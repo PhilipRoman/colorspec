@@ -186,4 +186,4 @@ for line in coroutine.wrap(getline) do
 	::continue::
 end
 
-print(table.concat(result, ':'))
+io.write(table.concat(result, ':'))
