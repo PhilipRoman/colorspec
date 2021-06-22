@@ -169,20 +169,30 @@ end
 local result = {}
 
 for line in coroutine.wrap(getline) do
-	if line:match '^%s*$' or line:match '^%s*#' then
+	if line:find '^%s*$' or line:find '^%s*#' then
 		goto continue
 	end
-	local key, rest = line:match('^(.-):(.+)$')
-	if not key and rest then
+	local key, rest = line:match('^(.-):(.*)$')
+	if not key or not rest then
 		info "bad syntax"
 		goto continue
 	end
+	rest = rest:match '^%s*(.*)%s*$'
 	local resolved = keys[key] or keys[string.lower(key)]
 	if not resolved then
 		info("unknown key: ", key)
+		if rest == '' then
+			table.insert(result, key)
+		else
+			table.insert(result, key .. '=' .. rest)
+		end
 		goto continue
 	end
-	table.insert(result, resolved .. "=" .. doline(rest))
+	if rest == '' then
+		table.insert(result, resolved)
+	else
+		table.insert(result, resolved .. "=" .. doline(rest))
+	end
 	::continue::
 end
 

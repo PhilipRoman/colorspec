@@ -44,4 +44,7 @@ return {
 	se = 'se',
 	separator = 'se',
 	separators = 'se',
+
+	ne = 'ne',
+	rv = 'rv',
 }
